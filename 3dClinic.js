@@ -1281,10 +1281,10 @@
   const matches = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const Dt = (t) => new THREE.Vector3(t[0], t[1], t[2]);
   const Ot = {
-    "front-desk": 1,
+    "front-office": 1,
     billing: 2,
-    manager: 4,
-    gym: 5,
+    management: 4,
+    clinical: 5,
   };
   let jt = JSON.parse(
     JSON.stringify({
@@ -1292,7 +1292,7 @@
         pos: [0, 31, 13.5],
         tgt: [0, 0, 0.3],
       },
-      "front-desk": {
+      "front-office": {
         pos: [-7.84, 2.51, -8.5],
         tgt: [-5.74, 0.6, -2.09],
       },
@@ -1300,11 +1300,11 @@
         pos: [-1.89, 3.44, 6.35],
         tgt: [-5.82, 1.21, 2.82],
       },
-      gym: {
+      clinical: {
         pos: [-0.9, 3.53, 1.55],
         tgt: [2.98, 0.63, -3.11],
       },
-      manager: {
+      management: {
         pos: [12.01, 3.13, 5.97],
         tgt: [6.02, 1.21, 3.68],
       },
@@ -1569,10 +1569,10 @@
     document.documentElement.dataset.clinicGlow = e;
     o.dataset.clinicGlow = e;
     document
-      .querySelectorAll("[data-clinic-room], [data-clinic-partnership], [data-clinic-close]")
+      .querySelectorAll("[data-role], [data-clinic-partnership], [data-role-dismiss]")
       .forEach((e) => {
         const o =
-          (e.dataset.clinicRoom && e.dataset.clinicRoom === view) ||
+          (e.dataset.role && e.dataset.role === view) ||
           (e.hasAttribute("data-clinic-partnership") && ae.on);
         e.classList.toggle("is-active", !!o);
         e.setAttribute("aria-pressed", o ? "true" : "false");
@@ -1617,10 +1617,10 @@
     a();
   }
   const pe = {
-    "front-desk": new THREE.Vector3(-6.05, b + 0.6, -2.05),
+    "front-office": new THREE.Vector3(-6.05, b + 0.6, -2.05),
     billing: new THREE.Vector3(-6.05, b + 0.6, 3.7),
-    gym: new THREE.Vector3(3.95, b + 0.6, -2.05),
-    manager: new THREE.Vector3(6.4, b + 0.6, 3.7),
+    clinical: new THREE.Vector3(3.95, b + 0.6, -2.05),
+    management: new THREE.Vector3(6.4, b + 0.6, 3.7),
     partnership: new THREE.Vector3(0, 0, 7.15),
   };
   const Ee = new THREE.Vector3();
@@ -1919,10 +1919,11 @@
   });
   document.addEventListener("click", (t) => {
     const e = t.target.closest(
-      "[data-clinic-room], [data-clinic-close], [data-clinic-partnership]",
+      "[data-role], [data-role-dismiss], [data-clinic-partnership]",
     );
     e &&
-      (e.hasAttribute("data-clinic-close")
+      (!e.dataset.role || Ot[e.dataset.role]) &&
+      (e.hasAttribute("data-role-dismiss")
         ? fe("overview")
         : e.hasAttribute("data-clinic-partnership")
           ? ((ue = true),
@@ -1933,7 +1934,7 @@
               le(),
               he(ce),
               a()))
-          : fe(e.dataset.clinicRoom === ce ? "overview" : e.dataset.clinicRoom));
+          : fe(e.dataset.role === ce ? "overview" : e.dataset.role));
   });
   he("overview");
   if (!matches) {
@@ -2222,7 +2223,7 @@
         const { clientWidth, clientHeight } = o;
         t.forEach((t) => {
           const o =
-            t.dataset.clinicRoom ||
+            t.dataset.role ||
             (t.hasAttribute("data-clinic-partnership") ? "partnership" : null);
           if (o && pe[o]) {
             Ee.copy(pe[o]).project(s);
