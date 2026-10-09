@@ -1569,7 +1569,7 @@
     document.documentElement.dataset.clinicGlow = e;
     o.dataset.clinicGlow = e;
     document
-      .querySelectorAll("[data-role], [data-clinic-partnership], [data-role-dismiss]")
+      .querySelectorAll("[data-role]:not(dialog), [data-clinic-partnership], [data-role-dismiss]")
       .forEach((e) => {
         const o =
           (e.dataset.role && e.dataset.role === view) ||
@@ -1919,10 +1919,9 @@
   });
   document.addEventListener("click", (t) => {
     const e = t.target.closest(
-      "[data-role], [data-role-dismiss], [data-clinic-partnership]",
+      "[data-role]:not(dialog), [data-role-dismiss], [data-clinic-partnership]",
     );
     e &&
-      (!e.dataset.role || Ot[e.dataset.role]) &&
       (e.hasAttribute("data-role-dismiss")
         ? fe("overview")
         : e.hasAttribute("data-clinic-partnership")
@@ -1934,7 +1933,7 @@
               le(),
               he(ce),
               a()))
-          : fe(e.dataset.role === ce ? "overview" : e.dataset.role));
+          : Ot[e.dataset.role] && fe(e.dataset.role));
   });
   he("overview");
   if (!matches) {
