@@ -3,18 +3,18 @@
     throw new Error("three.js did not load");
   }
   const t = {
-    ground: 0xeae4df,
-    plinth: 0xdcd9d5,
-    wall: 0xe8e6e3,
-    floor: 0xd0cdc8,
-    gymFloor: 0xbcb8b3,
-    furnLight: 0xc6c5c3,
-    furn: 0xc9c5c0,
-    furnMid: 0x7c7a77,
-    furnDark: 0x6e6a68,
-    device: 0x7d7873,
+    ground: 0xfafafa,
+    plinth: 0xffffff,
+    wall: 0xf7f7f7,
+    floor: 0xdcdcdc,
+    gymFloor: 0xc3c3c3,
+    furnLight: 0xb0b0b0,
+    furn: 0xa1a1a1,
+    furnMid: 0x7b7b7b,
+    furnDark: 0x696969,
+    device: 0x5c5c5c,
     red: 0xff5252,
-    paper: 0xf3f1ec,
+    paper: 0xf8f8f8,
   };
   const e = {};
   for (const o in t) {
@@ -1556,6 +1556,45 @@
       a();
     }
   });
+  let hoverRoom = null;
+  const roomBtn = (t) => {
+    const e = t.target.closest && t.target.closest("[data-role]:not(dialog)");
+    return e && Ot[e.dataset.role] ? e : null;
+  };
+  document.addEventListener("pointerover", (t) => {
+    const e = roomBtn(t);
+    if (t.pointerType === "mouse" && e) {
+      hoverRoom = e.dataset.role;
+      le();
+      a();
+    }
+  });
+  document.addEventListener("pointerout", (t) => {
+    const e = roomBtn(t);
+    if (!(
+      !e ||
+      (t.relatedTarget && t.relatedTarget.closest && t.relatedTarget.closest("[data-role]:not(dialog)") === e)
+    )) {
+      hoverRoom = null;
+      le();
+      a();
+    }
+  });
+  document.addEventListener("focusin", (t) => {
+    const e = roomBtn(t);
+    if (e && t.target.matches(":focus-visible")) {
+      hoverRoom = e.dataset.role;
+      le();
+      a();
+    }
+  });
+  document.addEventListener("focusout", (t) => {
+    if (roomBtn(t)) {
+      hoverRoom = null;
+      le();
+      a();
+    }
+  });
   ae.uniforms.uWidth.value = Pt.glowW;
   ae.uniforms.uBlur.value = Pt.glowR;
   ae.uniforms.uStrength.value = Pt.glowS;
@@ -1588,9 +1627,10 @@
     );
   }
   function le() {
-    const t = ce === "free" ? 3 : Ot[ce];
+    const h = Ot[hoverRoom];
+    const t = h || (ce === "free" ? 3 : Ot[ce]);
     Object.keys(Qt).forEach((e) => {
-      Qt[e] = !t || ae.on || +e === t ? 1 : 0;
+      Qt[e] = !t || (ae.on && !h) || +e === t ? 1 : 0;
     });
   }
   function de() {
@@ -2084,9 +2124,9 @@
     }
     if (
       ((t) => {
-        const e = Ot[ce];
-        const o = Pt.focusMode !== "off" && e && !ae.on;
-        ne.set(Pt.focusMode === "tint" ? Pt.focusTint : Pt.colors.ground || "#eae4df");
+        const e = Ot[hoverRoom] || Ot[ce];
+        const o = Pt.focusMode !== "off" && e && (Ot[hoverRoom] || !ae.on);
+        ne.set(Pt.focusMode === "tint" ? Pt.focusTint : Pt.colors.ground || "#fafafa");
         let n = false;
         Object.keys(xt).forEach((r) => {
           const a = o && +r !== e ? Pt.focusAmt : 0;
