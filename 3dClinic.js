@@ -67,9 +67,9 @@
   u.minDistance = 0.8;
   u.maxDistance = 70;
   u.addEventListener("change", a);
-  i.add(new THREE.AmbientLight(0xffffff, 0.42));
+  i.add(new THREE.AmbientLight(0xffffff, 0.48));
   i.add(new THREE.HemisphereLight(0xffffff, 0xb9b4ad, 0.38));
-  const h = new THREE.DirectionalLight(0xffffff, 0.3);
+  const h = new THREE.DirectionalLight(0xffffff, 0.22);
   h.position.set(-11, 24, 9);
   h.castShadow = true;
   const l =
@@ -97,7 +97,7 @@
     const o = new Float32Array(3 * normal.count);
     for (let t = 0; t < normal.count; t++) {
       const n = normal.getY(t);
-      let r = n >= 0 ? 0.8 + 0.2 * n : 0.8 + 0.12 * n;
+      let r = n >= 0 ? 0.86 + 0.14 * n : 0.86 + 0.08 * n;
       r += 0.04 * Math.max(0, normal.getZ(t) - normal.getX(t)) * (1 - Math.abs(n));
       o[3 * t] = o[3 * t + 1] = o[3 * t + 2] = r;
     }
@@ -112,8 +112,34 @@
     (e || i).add(t);
     return t;
   }
+  // Box with softened edges: one bevel step per edge, smooth normals round it off.
+  function roundedBox(t, e, o, r) {
+    const g = new THREE.BoxGeometry(1, 1, 1, 3, 3, 3).toNonIndexed();
+    const position = g.attributes.position;
+    const normal = g.attributes.normal;
+    const v = new THREE.Vector3();
+    const c = new THREE.Vector3();
+    const box = new THREE.Vector3(t / 2 - r, e / 2 - r, o / 2 - r);
+    for (let i = 0; i < position.count; i++) {
+      v.fromBufferAttribute(position, i);
+      c.set(v.x - Math.sign(v.x) / 6, v.y - Math.sign(v.y) / 6, v.z - Math.sign(v.z) / 6).normalize();
+      position.setXYZ(
+        i,
+        box.x * Math.sign(v.x) + c.x * r,
+        box.y * Math.sign(v.y) + c.y * r,
+        box.z * Math.sign(v.z) + c.z * r,
+      );
+      normal.setXYZ(i, c.x, c.y, c.z);
+    }
+    return g;
+  }
+  // Last argument: corner radius; omitted picks one from the box size, 0 keeps it square.
   function E(t, e, o, n, r, a, i, s, c) {
-    const u = new THREE.Mesh(new THREE.BoxGeometry(t, e, o), n);
+    const rad = c === undefined ? Math.min(0.03, 0.18 * Math.min(t, e, o)) : c;
+    const u = new THREE.Mesh(
+      rad >= 0.003 ? roundedBox(t, e, o, rad) : new THREE.BoxGeometry(t, e, o),
+      n,
+    );
     u.position.set(r, a + e / 2, i);
     return p(u, s);
   }
@@ -258,12 +284,12 @@
     const o = (t) => (t === y || t === T || t === R || t === x ? I : P) / 2;
     return [e.x[0] + o(e.x[0]), e.x[1] - o(e.x[1]), e.z[0] + o(e.z[0]), e.z[1] - o(e.z[1])];
   }
-  const V = E(1, 1, 1, e.plinth, 0, 0, 0);
+  const V = E(1, 1, 1, e.plinth, 0, 0, 0, null, 0);
   V.castShadow = false;
-  const D = E(20, 0.02, 11.5, e.floor, 0, 0, 0, null);
+  const D = E(20, 0.02, 11.5, e.floor, 0, 0, 0, null, 0);
   D.castShadow = false;
   D.userData.shell = true;
-  const O = E(12.1, 0.035, 7.4, e.gymFloor, 3.95, 0, -2.05, null);
+  const O = E(12.1, 0.035, 7.4, e.gymFloor, 3.95, 0, -2.05, null, 0);
   function j(t, o, n, r, a, i) {
     const s = (i || []).slice().sort((t, e) => t[0] - e[0]);
     let c = n;
@@ -280,8 +306,8 @@
       const i = r - n;
       const s = (n + r) / 2;
       (t === "x"
-        ? E(i, b, a, e.wall, s, 0, o, null)
-        : E(a, b, i, e.wall, o, 0, s, null)
+        ? E(i, b, a, e.wall, s, 0, o, null, 0)
+        : E(a, b, i, e.wall, o, 0, s, null, 0)
       ).userData.shell = true;
     });
   }
@@ -1232,7 +1258,7 @@
     });
   })();
   const It = {
-    shadowSoft: 1.5,
+    shadowSoft: 3,
     plinthH: 0.01,
     plinthO: 0.35,
     glowW: 2.2,
@@ -1456,13 +1482,17 @@
   const Qt = {};
   const te = {};
   Object.keys(Tt).forEach((t) => {
-    Qt[t] = 1;
-    te[t] = 1;
+    Qt[t] = 0;
+    te[t] = 0;
   });
   const ee = new THREE.Color();
   const oe = new THREE.Color();
   const ne = new THREE.Color();
   const re = {};
+  // Rooms start tinted: the overview at rest is the tinted state.
+  Object.keys(xt).forEach((r) => {
+    re[r] = Pt.focusMode !== "off" ? Pt.focusAmt : 0;
+  });
   const ae = (() => {
     const t = new THREE.Vector2(10.15, 5.9);
     const uniforms = {
@@ -1640,8 +1670,9 @@
   function le() {
     const h = Ot[hoverRoom];
     const t = h || (ce === "free" ? 3 : Ot[ce]);
+    const rest = !t && ce === "overview" && !ae.on;
     Object.keys(Qt).forEach((e) => {
-      Qt[e] = !t || (ae.on && !h) || +e === t ? 1 : 0;
+      Qt[e] = !rest && (!t || (ae.on && !h) || +e === t) ? 1 : 0;
     });
   }
   function de() {
@@ -2004,13 +2035,11 @@
               ce = "overview";
               ae.on = false;
               he("overview");
-              Object.keys(Qt).forEach((t) => {
-                Qt[t] = 1;
-              });
+              le();
               const t = zt("intro");
               Wt.pos.copy(t.pos);
               Wt.tgt.copy(t.tgt);
-              $t(zt("overview"), 3.2, 0);
+              $t(zt("overview"), 2.0, 0);
               a();
             })();
           }
@@ -2165,7 +2194,8 @@
     if (
       ((t) => {
         const e = Ot[hoverRoom] || Ot[ce];
-        const o = Pt.focusMode !== "off" && e && (Ot[hoverRoom] || !ae.on);
+        const rest = !e && ce === "overview" && !ae.on;
+        const o = Pt.focusMode !== "off" && (e ? Ot[hoverRoom] || !ae.on : rest);
         ne.set(Pt.focusMode === "tint" ? Pt.focusTint : Pt.colors.ground || "#fafafa");
         let n = false;
         Object.keys(xt).forEach((r) => {
