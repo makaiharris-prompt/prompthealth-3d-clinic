@@ -1706,7 +1706,37 @@
     partnership: new THREE.Vector3(0, 0, 7.15),
   };
   const Ee = new THREE.Vector3();
-  const we = new THREE.Vector3(0.42, 0.78, 3.33);
+  // Stretches a room button over the room's floor: a child of the button that
+  // covers the stage, clipped to the floor's outline on screen. Clicking it is
+  // clicking the button, so the button's own command opens the panel, and the
+  // room can be clicked anywhere while the mouse parallax nudges the label around.
+  function roomHit(btn, room, x, y, w, h) {
+    let hit = btn.querySelector(":scope > [data-clinic-hit]");
+    if (!hit) {
+      hit = document.createElement("span");
+      hit.setAttribute("data-clinic-hit", "");
+      hit.setAttribute("aria-hidden", "true");
+      hit.style.position = "absolute";
+      hit.style.zIndex = "0";
+      btn.appendChild(hit);
+    }
+    // The button is centred on (x, y), so this puts the hit area's origin at the stage's.
+    hit.style.left = `${(btn.offsetWidth / 2 - x).toFixed(1)}px`;
+    hit.style.top = `${(btn.offsetHeight / 2 - y).toFixed(1)}px`;
+    hit.style.width = `${w}px`;
+    hit.style.height = `${h}px`;
+    const pts = [
+      [room.x[0], room.z[0]],
+      [room.x[1], room.z[0]],
+      [room.x[1], room.z[1]],
+      [room.x[0], room.z[1]],
+    ].map(([px, pz]) => {
+      Ee.set(px, 0, pz).project(s);
+      return `${(((Ee.x + 1) / 2) * w).toFixed(1)}px ${(((1 - Ee.y) / 2) * h).toFixed(1)}px`;
+    });
+    hit.style.clipPath = `polygon(${pts.join(", ")})`;
+  }
+  const we =new THREE.Vector3(0.42, 0.78, 3.33);
   const Me = new THREE.Sphere(we, 0.28);
   const me = new THREE.Raycaster();
   const ge = new THREE.Vector2();
@@ -2336,8 +2366,13 @@
             (t.hasAttribute("data-clinic-partnership") ? "partnership" : null);
           if (o && pe[o]) {
             Ee.copy(pe[o]).project(s);
-            t.style.setProperty("--clinic-x", `${(((Ee.x + 1) / 2) * clientWidth).toFixed(1)}px`);
-            t.style.setProperty("--clinic-y", `${(((1 - Ee.y) / 2) * clientHeight).toFixed(1)}px`);
+            const x = ((Ee.x + 1) / 2) * clientWidth;
+            const y = ((1 - Ee.y) / 2) * clientHeight;
+            t.style.setProperty("--clinic-x", `${x.toFixed(1)}px`);
+            t.style.setProperty("--clinic-y", `${y.toFixed(1)}px`);
+            if (Ot[o]) {
+              roomHit(t, S.find((e) => e.n === Ot[o]), x, y, clientWidth, clientHeight);
+            }
           }
         });
       })();
