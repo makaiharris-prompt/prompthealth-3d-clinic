@@ -2047,6 +2047,27 @@
               a()))
           : Ot[e.dataset.role] && fe(e.dataset.role));
   });
+  // Panels can also close on Esc or a click outside them (closedby="any"),
+  // which skips the close button, so the dialog's own close event resets the
+  // scene too. Switching panels opens the next one before this runs, so an
+  // open panel or a view that has already moved on means there's nothing to undo.
+  document.addEventListener(
+    "close",
+    (t) => {
+      const e = t.target;
+      if (
+        !(e instanceof HTMLDialogElement) ||
+        !e.dataset.role ||
+        document.querySelector("dialog[data-role][open]")
+      ) {
+        return;
+      }
+      if (ce === e.dataset.role || (e.dataset.role === "partnership" && ae.on)) {
+        fe("overview");
+      }
+    },
+    true,
+  );
   he("overview");
   if (!matches) {
     Nt(true);
