@@ -1322,7 +1322,17 @@
     side: Pt.modalSide,
     x: null,
     y: null,
+    sheet: null,
   };
+  // The info panel is a bottom sheet on phones and, per the panel CSS, on short
+  // desktop viewports. A measured open panel overrides the media query.
+  const sheetQuery = window.matchMedia("(min-width: 768px) and (max-height: 720px)");
+  function Vt(clientWidth) {
+    if (clientWidth < 768) {
+      return true;
+    }
+    return At.sheet !== null ? At.sheet : sheetQuery.matches;
+  }
   function Bt(clientWidth, clientHeight) {
     const o_dataset = o.dataset;
     const r =
@@ -1345,17 +1355,18 @@
     };
   }
   function Ft() {
-    const t = Math.max(
+    const { clientWidth, clientHeight } = o;
+    const n = Vt(clientWidth);
+    const r = n ? clientWidth : clientWidth - Bt(clientWidth, clientHeight).x * Gt.v;
+    const a = Math.max(
+      n ? clientHeight - Bt(clientWidth, clientHeight).y * Gt.v : clientHeight,
       1,
-      1.6 /
-        (() => {
-          const { clientWidth, clientHeight } = o;
-          const n = clientWidth < 768;
-          const r = n ? clientWidth : clientWidth - Bt(clientWidth, clientHeight).x * Gt.v;
-          const a = n ? clientHeight - Bt(clientWidth, clientHeight).y * Gt.v : clientHeight;
-          return r / Math.max(a, 1);
-        })(),
     );
+    let t = Math.max(1, 1.6 / (r / a));
+    // A desktop sheet leaves a short strip above it: pull back so the room fits its height.
+    if (n && clientWidth >= 768) {
+      t = Math.max(t, clientHeight / a);
+    }
     if (ce === "free") {
       return Math.min(t, 1.25);
     }
@@ -2016,29 +2027,58 @@
       n.setSize(clientWidth, clientHeight, false);
       s.aspect = clientWidth / clientHeight;
       s.updateProjectionMatrix();
-      (() => {
-        const o_dataset = o.dataset;
-        const e = document.querySelector("[data-clinic-modal]");
-        At.side = o_dataset.clinicModalSide || Pt.modalSide;
-        At.x = At.y = null;
-        if (!(e && e.offsetWidth && e.offsetParent && e.offsetParent.contains(o))) {
-          return;
-        }
-        const { clientWidth, clientHeight } = o;
-        const { offsetLeft, offsetTop, offsetWidth, offsetHeight } = e;
-        At.side = offsetLeft + offsetWidth / 2 > clientWidth / 2 ? "right" : "left";
-        At.x =
-          offsetWidth +
-          Math.max(0, At.side === "right" ? clientWidth - offsetLeft - offsetWidth : offsetLeft);
-        At.y = offsetHeight + Math.max(0, clientHeight - offsetTop - offsetHeight);
-      })();
+      Ie(false);
       a();
     }
+  }
+  // Measures the open info panel against the stage. With `keep`, a closed panel
+  // leaves the last measurement in place so the camera eases back without a jump.
+  // The home page's dialogs are only measured on desktop; phones keep the defaults.
+  function Ie(keep) {
+    const { clientWidth, clientHeight } = o;
+    const e =
+      document.querySelector("[data-clinic-modal]") ||
+      (clientWidth >= 768 ? document.querySelector(".home-clinic_modal[open]") : null);
+    const p = e && e.offsetWidth && e.offsetParent;
+    let left = 0;
+    let top = 0;
+    if (p) {
+      const t = o.getBoundingClientRect();
+      const n = p.getBoundingClientRect();
+      // Offsets rather than the panel's own rect, so an enter transform doesn't skew it.
+      left = n.left - t.left + p.clientLeft + e.offsetLeft;
+      top = n.top - t.top + p.clientTop + e.offsetTop;
+    }
+    if (
+      !p ||
+      left >= clientWidth ||
+      top >= clientHeight ||
+      left + e.offsetWidth <= 0 ||
+      top + e.offsetHeight <= 0
+    ) {
+      if (!keep) {
+        At.side = o.dataset.clinicModalSide || Pt.modalSide;
+        At.x = At.y = At.sheet = null;
+      }
+      return;
+    }
+    const { offsetWidth, offsetHeight } = e;
+    At.side = left + offsetWidth / 2 > clientWidth / 2 ? "right" : "left";
+    At.sheet = offsetWidth > clientWidth / 2 && top + offsetHeight / 2 > clientHeight / 2;
+    At.x =
+      offsetWidth + Math.max(0, At.side === "right" ? clientWidth - left - offsetWidth : left);
+    At.y = offsetHeight + Math.max(0, clientHeight - top - offsetHeight);
+    a();
   }
   u.enabled = false;
   window.addEventListener("resize", Te);
   if (window.ResizeObserver) {
     new ResizeObserver(() => Te()).observe(o);
+    // Panels open and close by toggling display, which shows up as a resize.
+    const t = new ResizeObserver(() => Ie(true));
+    document
+      .querySelectorAll("[data-clinic-modal], .home-clinic_modal")
+      .forEach((e) => t.observe(e));
   }
   let Re = true;
   new IntersectionObserver((t) => {
@@ -2108,7 +2148,7 @@
           Gt.v += n * (1 - Math.exp(-t * (matches ? 60 : 3.2)));
         }
         const { clientWidth, clientHeight } = o;
-        const i = clientWidth < 768;
+        const i = Vt(clientWidth);
         const c = Bt(clientWidth, clientHeight);
         const u = i ? 0 : 0.5 * c.x * Gt.v * (At.side === "right" ? 1 : -1);
         const h = i ? 0.5 * c.y * Gt.v : 0;
