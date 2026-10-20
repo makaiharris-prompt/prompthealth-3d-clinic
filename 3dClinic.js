@@ -1305,6 +1305,10 @@
     }
   })();
   const matches = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Phones stack the info panels in the page below the scene, so there the scene
+  // holds the overview: no intro flight, no free view, and the room buttons
+  // scroll the page (the panel script does that) instead of moving the camera.
+  const phoneQuery = window.matchMedia("(max-width: 767px)");
   const Dt = (t) => new THREE.Vector3(t[0], t[1], t[2]);
   const Ot = {
     "front-office": 1,
@@ -1741,7 +1745,7 @@
   const me = new THREE.Raycaster();
   const ge = new THREE.Vector2();
   function ke(t) {
-    if (ce === "free") {
+    if (ce === "free" || phoneQuery.matches) {
       return false;
     }
     const e = n.domElement.getBoundingClientRect();
@@ -2030,6 +2034,9 @@
     u_target.y = THREE.MathUtils.clamp(u_target.y, 0, 3);
   });
   document.addEventListener("click", (t) => {
+    if (phoneQuery.matches) {
+      return;
+    }
     const e = t.target.closest(
       "[data-role]:not(dialog), [data-role-dismiss], [data-clinic-partnership]",
     );
@@ -2069,19 +2076,28 @@
     true,
   );
   he("overview");
-  if (!matches) {
-    Nt(true);
-  }
-  if (matches) {
+  function holdOverview() {
     const t = zt("overview");
     Wt.pos.copy(t.pos);
     Wt.tgt.copy(t.tgt);
+  }
+  // Reduced motion and phones start on the overview instead of flying in.
+  const still = matches || phoneQuery.matches;
+  if (!still) {
+    Nt(true);
+  }
+  if (still) {
+    holdOverview();
   } else {
     new IntersectionObserver(
       (t, e) => {
         if (t.some((t) => t.isIntersecting)) {
           e.disconnect();
-          if (!ue) {
+          if (!ue && phoneQuery.matches) {
+            holdOverview();
+            Nt(false);
+            a();
+          } else if (!ue) {
             (() => {
               ce = "overview";
               ae.on = false;
@@ -2101,6 +2117,13 @@
       },
     ).observe(o);
   }
+  // Nothing opens over the scene at phone width, so if the screen narrows while
+  // a room, the free view or the partnership glow is showing, head back out.
+  phoneQuery.addEventListener("change", (t) => {
+    if (t.matches && (ce !== "overview" || ae.on)) {
+      fe("overview");
+    }
+  });
   function Te() {
     const { clientWidth, clientHeight } = o;
     if (clientWidth && clientHeight) {
