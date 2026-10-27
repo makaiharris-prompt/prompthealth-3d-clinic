@@ -1354,14 +1354,13 @@
     y: null,
     sheet: null,
   };
-  // The info panel is a bottom sheet on phones and, per the panel CSS, on short
-  // desktop viewports. A measured open panel overrides the media query.
-  const sheetQuery = window.matchMedia("(min-width: 768px) and (max-height: 720px)");
+  // The home page's info panel is a bottom sheet at every width. Above phone
+  // width a measured open panel can say otherwise (a side panel on another page).
   function Vt(clientWidth) {
     if (clientWidth < 768) {
       return true;
     }
-    return At.sheet !== null ? At.sheet : sheetQuery.matches;
+    return At.sheet !== null ? At.sheet : true;
   }
   function Bt(clientWidth, clientHeight) {
     const o_dataset = o.dataset;
@@ -2167,7 +2166,9 @@
     }
     const { offsetWidth, offsetHeight } = e;
     At.side = left + offsetWidth / 2 > clientWidth / 2 ? "right" : "left";
-    At.sheet = offsetWidth > clientWidth / 2 && top + offsetHeight / 2 > clientHeight / 2;
+    // A sheet is wider than it is tall and sits in the bottom half; a side panel is
+    // tall. (Not "wider than half the stage": the sheet's width is capped on wide screens.)
+    At.sheet = offsetWidth > offsetHeight && top + offsetHeight / 2 > clientHeight / 2;
     At.x =
       offsetWidth + Math.max(0, At.side === "right" ? clientWidth - left - offsetWidth : left);
     At.y = offsetHeight + Math.max(0, clientHeight - top - offsetHeight);
