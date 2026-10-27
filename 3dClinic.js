@@ -1355,8 +1355,8 @@
     sheet: null,
   };
   // The info panel is a bottom sheet on phones and, per the panel CSS, wherever
-  // three full-size carousel slides fit. A measured open panel overrides the query.
-  const sheetQuery = window.matchMedia("(min-width: 1380px) and (min-height: 820px)");
+  // two full-size carousel slides fit. A measured open panel overrides the query.
+  const sheetQuery = window.matchMedia("(min-width: 970px) and (min-height: 740px)");
   function Vt(clientWidth) {
     if (clientWidth < 768) {
       return true;
